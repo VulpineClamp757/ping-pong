@@ -34,32 +34,9 @@ background = load_img("background.png", (WIDTH, HEIGHT))
 menu_bg = load_img("menu_bg.png", (WIDTH, HEIGHT))
 btn_img = load_img("button.png", (260, 64))
 btn_hover_img = load_img("button_hover.png", (260, 64))
-coin_img = load_img("coin.png", (24, 24))
-coin_small = load_img("coin.png", (18, 18))
-
-ball_skins = {
-    "white": ["Класичний", 0],
-    "tennis": ["Тенісний", 15],
-    "fire": ["Вогняний", 30],
-    "ice": ["Крижаний", 30],
-    "gold": ["Золотий", 60],
-}
-paddle_skins = {
-    "green": ["Зелена", 0],
-    "purple": ["Фіолетова", 15],
-    "wood": ["Дерев'яна", 20],
-    "neon": ["Неон", 40],
-    "red": ["Червона", 40],
-}
-
-ball_images = {}
-ball_icons = {}
-for name in ball_skins:
-    ball_images[name] = load_img("ball_" + name + ".png", (20, 20))
-    ball_icons[name] = load_img("ball_" + name + ".png", (40, 40))
-paddle_images = {}
-for name in paddle_skins:
-    paddle_images[name] = load_img("paddle_" + name + ".png", (20, 100))
+ball_img = load_img("ball_white.png", (20, 20))
+my_paddle_img = load_img("paddle_green.png", (20, 100))
+enemy_paddle_img = load_img("paddle_purple.png", (20, 100))
 
 sounds = {}
 for name in ["wall", "hit", "click", "coin", "goal", "win"]:
@@ -73,12 +50,7 @@ mixer.music.set_volume(0.3)
 SAVE_FILE = "save.json"
 data = {
     "name": "Гравець",
-    "coins": 0,
     "sound": True,
-    "balls": ["white"],
-    "paddles": ["green"],
-    "ball": "white",
-    "paddle": "green",
 }
 if os.path.exists(SAVE_FILE):
     try:
@@ -101,12 +73,6 @@ def play(name):
 def text(t, f, color, center):
     img = f.render(t, True, color)
     screen.blit(img, img.get_rect(center=center))
-
-
-def draw_coins():
-    screen.blit(coin_img, (WIDTH - 110, 18))
-    t = font_main.render(str(data["coins"]), True, GOLD)
-    screen.blit(t, (WIDTH - 80, 20))
 
 
 class Button:
@@ -219,10 +185,9 @@ def draw_particles():
         draw.circle(screen, p[5], (int(p[0]), int(p[1])), max(1, p[4] // 7))
 
 
-play_btn = Button("Грати", 270, 220)
-shop_btn = Button("Магазин", 270, 300)
-settings_btn = Button("Налаштування", 270, 380)
-exit_btn = Button("Вихід", 270, 460)
+play_btn = Button("Грати", 270, 240)
+settings_btn = Button("Налаштування", 270, 320)
+exit_btn = Button("Вихід", 270, 400)
 menu_ball = [100, 300, 4, 3]
 
 
@@ -236,21 +201,18 @@ def menu_screen(events):
         menu_ball[2] *= -1
     if menu_ball[1] < 10 or menu_ball[1] > HEIGHT - 10:
         menu_ball[3] *= -1
-    screen.blit(ball_images[data["ball"]], (menu_ball[0] - 10, menu_ball[1] - 10))
+    screen.blit(ball_img, (menu_ball[0] - 10, menu_ball[1] - 10))
 
     text("PING PONG", font_title, (60, 30, 120), (WIDTH // 2 + 4, 104))
     text("PING PONG", font_title, WHITE, (WIDTH // 2, 100))
     text("Привіт, " + data["name"] + "!", font_main, PURPLE, (WIDTH // 2, 170))
-    draw_coins()
 
-    for b in [play_btn, shop_btn, settings_btn, exit_btn]:
+    for b in [play_btn, settings_btn, exit_btn]:
         b.draw()
 
     for e in events:
         if play_btn.clicked(e):
             start_search()
-        if shop_btn.clicked(e):
-            state = "shop"
         if settings_btn.clicked(e):
             state = "settings"
         if exit_btn.clicked(e):
@@ -292,75 +254,6 @@ def settings_screen(events):
             state = "menu"
 
 
-shop_back_btn = Button("Назад", 270, 522)
-shop_msg = ""
-shop_msg_time = 0
-
-
-def shop_row(events, skins, images, owned_key, select_key, y, h, title):
-    global shop_msg, shop_msg_time
-    text(title, font_main, PURPLE, (WIDTH // 2, y - 18))
-    x = 70
-    for name in skins:
-        skin_name, price = skins[name]
-        card = Rect(x, y, 120, h)
-        if card.collidepoint(mouse.get_pos()):
-            draw.rect(screen, (70, 50, 130), card, border_radius=12)
-        else:
-            draw.rect(screen, (40, 30, 80), card, border_radius=12)
-        if data[select_key] == name:
-            draw.rect(screen, GOLD, card, 3, border_radius=12)
-
-        pic = images[name]
-        screen.blit(pic, pic.get_rect(center=(card.centerx, card.y + (h - 50) // 2)))
-        text(skin_name, font_small, WHITE, (card.centerx, card.bottom - 40))
-
-        if data[select_key] == name:
-            text("Обрано", font_small, GOLD, (card.centerx, card.bottom - 16))
-        elif name in data[owned_key]:
-            text("Вибрати", font_small, (150, 255, 150), (card.centerx, card.bottom - 16))
-        else:
-            screen.blit(coin_small, (card.centerx - 24, card.bottom - 25))
-            p = font_small.render(str(price), True, GOLD)
-            screen.blit(p, (card.centerx - 2, card.bottom - 24))
-
-        for e in events:
-            if e.type == MOUSEBUTTONDOWN and e.button == 1 and card.collidepoint(e.pos):
-                if name in data[owned_key]:
-                    data[select_key] = name
-                    play("click")
-                elif data["coins"] >= price:
-                    data["coins"] -= price
-                    data[owned_key].append(name)
-                    data[select_key] = name
-                    play("coin")
-                    shop_msg = "Куплено: " + skin_name
-                    shop_msg_time = time.get_ticks()
-                else:
-                    shop_msg = "Не вистачає монет!"
-                    shop_msg_time = time.get_ticks()
-                save_game()
-        x += 135
-
-
-def shop_screen(events):
-    global state
-    screen.blit(menu_bg, (0, 0))
-    text("Магазин", font_win, WHITE, (WIDTH // 2, 40))
-    draw_coins()
-
-    shop_row(events, ball_skins, ball_icons, "balls", "ball", 140, 120, "М'ячі")
-    shop_row(events, paddle_skins, paddle_images, "paddles", "paddle", 305, 200, "Платформи")
-
-    if time.get_ticks() - shop_msg_time < 1500:
-        text(shop_msg, font_main, GOLD, (WIDTH // 2, 85))
-
-    shop_back_btn.draw()
-    for e in events:
-        if shop_back_btn.clicked(e) or (e.type == KEYDOWN and e.key == K_ESCAPE):
-            state = "menu"
-
-
 def wait_screen(events):
     global state
     screen.blit(menu_bg, (0, 0))
@@ -377,18 +270,14 @@ def wait_screen(events):
 
 last_scores = None
 you_winner = False
-reward = 0
 
 
 def game_screen(events):
-    global state, last_scores, flash, you_winner, reward
+    global state, last_scores, flash, you_winner
     gs = game_state
 
     if gs.get("winner") is not None:
         you_winner = gs["winner"] == my_id
-        reward = 10 if you_winner else 3
-        data["coins"] += reward
-        save_game()
         play("win" if you_winner else "goal")
         state = "end"
         return
@@ -397,12 +286,10 @@ def game_screen(events):
     if "paddles" not in gs:
         return
 
-    my_skin = data["paddle"]
-    enemy_skin = "purple" if my_skin != "purple" else "green"
-    left = my_skin if my_id == 0 else enemy_skin
-    right = my_skin if my_id == 1 else enemy_skin
-    screen.blit(paddle_images[left], (20, gs["paddles"]["0"]))
-    screen.blit(paddle_images[right], (WIDTH - 40, gs["paddles"]["1"]))
+    left = my_paddle_img if my_id == 0 else enemy_paddle_img
+    right = my_paddle_img if my_id == 1 else enemy_paddle_img
+    screen.blit(left, (20, gs["paddles"]["0"]))
+    screen.blit(right, (WIDTH - 40, gs["paddles"]["1"]))
 
     bx, by = gs["ball"]["x"], gs["ball"]["y"]
     if trail and abs(trail[-1][0] - bx) > 60:
@@ -410,7 +297,6 @@ def game_screen(events):
     trail.append((bx, by))
     if len(trail) > 8:
         trail.pop(0)
-    ball_img = ball_images[data["ball"]]
     for i, (tx, ty) in enumerate(trail[:-1]):
         t = ball_img.copy()
         t.set_alpha(20 + i * 20)
@@ -469,9 +355,6 @@ def end_screen(events):
         text("Ти переміг!", font_win, GOLD, (WIDTH // 2, HEIGHT // 2 - 80))
     else:
         text("Пощастить наступним разом!", font_win, GOLD, (WIDTH // 2, HEIGHT // 2 - 80))
-    screen.blit(coin_img, (WIDTH // 2 - 45, HEIGHT // 2 - 12))
-    p = font_main.render("+" + str(reward), True, GOLD)
-    screen.blit(p, (WIDTH // 2 - 12, HEIGHT // 2 - 10))
     text("K - в меню", font_small, PURPLE, (WIDTH // 2, HEIGHT // 2 + 50))
     end_btn.draw()
     for e in events:
@@ -493,8 +376,6 @@ while True:
         menu_screen(events)
     elif state == "settings":
         settings_screen(events)
-    elif state == "shop":
-        shop_screen(events)
     elif state == "wait":
         wait_screen(events)
     elif state == "game":
