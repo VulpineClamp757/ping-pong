@@ -7,7 +7,6 @@ from threading import Thread
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-# ---ПУГАМЕ НАЛАШТУВАННЯ ---
 WIDTH, HEIGHT = 800, 600
 init()
 mixer.init()
@@ -15,7 +14,6 @@ screen = display.set_mode((WIDTH, HEIGHT))
 clock = time.Clock()
 display.set_caption("Пінг-Понг")
 
-# --- ШРИФТИ ---
 font_title = font.Font(None, 110)
 font_win = font.Font(None, 72)
 font_main = font.Font(None, 36)
@@ -25,7 +23,6 @@ WHITE = (255, 255, 255)
 GOLD = (255, 215, 0)
 PURPLE = (160, 120, 255)
 
-# --- ЗОБРАЖЕННЯ ----
 def load_img(name, size=None):
     pic = image.load("images/" + name).convert_alpha()
     if size:
@@ -64,11 +61,13 @@ paddle_images = {}
 for name in paddle_skins:
     paddle_images[name] = load_img("paddle_" + name + ".png", (20, 100))
 
-# --- ЗВУКИ ---
 sounds = {}
 for name in ["wall", "hit", "click", "coin", "goal", "win"]:
     sounds[name] = mixer.Sound("sounds/" + name + ".wav")
     sounds[name].set_volume(0.6)
+
+mixer.music.load("sounds/music.wav")
+mixer.music.set_volume(0.3)
 
 
 SAVE_FILE = "save.json"
@@ -129,7 +128,6 @@ class Button:
         return False
 
 
-# --- СЕРВЕР ---
 client = None
 my_id = 0
 game_state = {}
@@ -377,7 +375,6 @@ def wait_screen(events):
             state = "menu"
 
 
-# --- ГРА ---
 last_scores = None
 you_winner = False
 reward = 0
@@ -484,6 +481,7 @@ def end_screen(events):
 
 
 state = "menu"
+mixer.music.play(-1)
 while True:
     events = event.get()
     for e in events:

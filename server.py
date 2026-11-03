@@ -137,7 +137,6 @@ class GameServer:
             print(f"Гравець {self.winner} переміг!")
             time.sleep(5)
 
-            # Закриваємо старі з'єднання
             for pid in [0, 1]:
                 try:
                     self.clients[pid].close()
